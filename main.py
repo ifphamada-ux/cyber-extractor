@@ -81,7 +81,7 @@ st.markdown(f"""
         border-radius: 10px;
         width: 100%;
         height: 50px;
-        border: 2px solid #00ff33;
+        border: 2px solid #ff0033;
         box-shadow: 0px 5px 15px rgba(255, 0, 51, 0.5);
         transition: all 0.3s ease;
     }}
@@ -118,19 +118,19 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='cyber-title'>💀 CYBER INTELLIGENCE & SOCIAL EXTRACTOR 💀</div>", unsafe_allow_html=True)
-st.markdown("<p class='description'>[ Secure Target Data Mining Interface - V2.1 ]</p>", unsafe_allow_html=True)
+st.markdown("<p class='description'>[ Deep Target Mining & Lead Qualification - V4.0 ]</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
-post_url = st.text_input("🔗 أدخل رابط بوست الضحية (فيسبوك أو إنستجرام):", placeholder="https://www.facebook.com/...")
+post_url = st.text_input("🔗 أدخل رابط البوست المستهدف:", placeholder="https://www.facebook.com/...")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-if st.button("🚀 بدء الاختراق السحابي وسحب البيانات"):
+if st.button("🚀 بدء فحص المهتمين واستخراج البيانات العميقة"):
     if not post_url:
         st.warning("⚠️ أدخل الرابط يا غالي أولاً!")
     else:
-        with st.spinner("⏳ جاري الحقن وسحب التعليقات وتحليل أسماء الأهداف..."):
+        with st.spinner("⏳ جارٍ استهداف المهتمين بالبوست وفحص بروفايلاتهم شخصياً..."):
             try:
                 extracted_data = []
                 with sync_playwright() as p:
@@ -143,43 +143,65 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
                     
                     time.sleep(8)
                     
-                    # نزول متكرر لتحميل أكبر عدد ممكن من التعليقات
-                    for i in range(6):
+                    # التمرير لتحميل التعليقات التفاعلية
+                    for i in range(4):
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
                     
-                    # استهداف عناصر التعليقات والبوستات بشكل ذكي
-                    comments = page.locator('div[dir="auto"], span[dir="auto"]').all_inner_texts()
+                    # استخراج عناصر الروابط وأسماء المعلقين المهتمين من البوست
+                    profile_elements = page.locator('a[href*="facebook.com/"], a[href*="instagram.com/"]').all()
                     
-                    # فلترة النصوص لاستخراج أرقام الهواتف الحقيقية
-                    phone_regex = r'(?:\+?[0-9]{1,3}\s?)?(?:01[0125][0-9]{8}|[0-9]{10,12})'
-                    
-                    seen_phones = set()
-                    seen_texts = set()
+                    targets = []
+                    seen_urls = set()
 
-                    for text in comments:
-                        if text and len(text.strip()) > 2:
-                            found_phones = re.findall(phone_regex, text)
+                    for el in profile_elements:
+                        try:
+                            href = el.get_attribute("href")
+                            name = el.inner_text().strip()
+                            
+                            # فلترة الروابط لاستبعاد اللينكات العامة والتركيز على بروفايلات الأشخاص
+                            if href and name and len(name) > 2:
+                                if "/posts/" not in href and "/photos/" not in href and "/watch/" not in href and "/story.php" not in href:
+                                    if href not in seen_urls:
+                                        seen_urls.add(href)
+                                        targets.append({"name": name, "url": href})
+                                        if len(targets) >= 10:  # حد أقصى لاستهداف أول 10 أهداف لضمان السرعة وتجنب الحظر
+                                            break
+                        except:
+                            continue
+
+                    # فحص كل بروفايل على حدة لاستخراج البيانات المتاحة (رقم الهاتف / الاهتمام)
+                    for target in targets:
+                        profile_name = target["name"]
+                        profile_url = target["url"]
+                        phone_found = "غير متوفر (حساب خاص)"
+                        
+                        try:
+                            # فتح صفحة البروفايل الشخصي للهدف
+                            profile_page = context.new_page()
+                            profile_page.goto(profile_url, timeout=30000)
+                            time.sleep(4)
+                            
+                            profile_text = profile_page.inner_text("body")
+                            
+                            # البحث عن رقم هاتف داخل بروفايل الشخص
+                            phone_regex = r'(?:\+?[0-9]{1,3}\s?)?(?:01[0125][0-9]{8}|[0-9]{10,12})'
+                            found_phones = re.findall(phone_regex, profile_text)
                             valid_phones = [p for p in found_phones if 10 <= len(re.sub(r'\D', '', p)) <= 13]
                             
                             if valid_phones:
-                                for phone in valid_phones:
-                                    clean_phone = re.sub(r'\D', '', phone)
-                                    if clean_phone not in seen_phones:
-                                        seen_phones.add(clean_phone)
-                                        extracted_data.append({
-                                            "اسم / صاحب التعليق أو النص": text[:100] + "..." if len(text) > 100 else text,
-                                            "رقم الهاتف المستخرج": clean_phone,
-                                            "الرابط / الحساب المستخرج": "متاح عبر التعليق الأصلي"
-                                        })
-                            elif len(text.strip()) > 15 and text not in seen_texts:
-                                seen_texts.add(text)
-                                if not any(char.isdigit() for char in text[:5]):
-                                    extracted_data.append({
-                                        "اسم / صاحب التعليق أو النص": text[:120],
-                                        "رقم الهاتف المستخرج": "غير متوفر في النص",
-                                        "الرابط / الحساب المستخرج": "نص تفاعلي / تعليق"
-                                    })
+                                phone_found = re.sub(r'\D', '', valid_phones[0])
+                            
+                            profile_page.close()
+                        except:
+                            pass
+
+                        extracted_data.append({
+                            "اسم الشخص المهتم": profile_name,
+                            "رقم الهاتف (إن وجد)": phone_found,
+                            "رابط الحساب الشخصي": profile_url,
+                            "الحالة": "مهتم بالبوست ومفحوص"
+                        })
 
                     browser.close()
                 
@@ -187,33 +209,34 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
                     df = pd.DataFrame(extracted_data)
                 else:
                     df = pd.DataFrame({
-                        "اسم / صاحب التعليق أو النص": ["تنبيه: المنصة تفرض حماية قوية تتطلب تسجيل دخول (Login Wall)"],
-                        "رقم الهاتف المستخرج": ["---"],
-                        "الرابط / الحساب المستخرج": ["---"]
+                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف (يتطلب فتح الصلاحيات أو تسجيل دخول)"],
+                        "رقم الهاتف (إن وجد)": ["---"],
+                        "رابط الحساب الشخصي": ["---"],
+                        "الحالة": ["فشل الاستخراج"]
                     })
                 
                 st.session_state['df_results'] = df
-                st.success("🔥 تمت عملية الفحص والتحليل بنجاح تام!")
+                st.success("🔥 تم تجميع الأهداف المهتمة وفحص بروفايلاتهم بنجاح تام!")
                 
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء السحب: {e}")
+                st.error(f"❌ حدث خطأ أثناء فحص الأهداف: {e}")
 
 if 'df_results' in st.session_state and not st.session_state['df_results'].empty:
     st.markdown("---")
-    st.subheader("📋 صيد الضحايا (البيانات والتعليقات المُصفّاة):")
+    st.subheader("📋 تقرير الأهداف المهتمة والبيانات المستخرجة:")
     st.dataframe(st.session_state['df_results'], use_container_width=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
     with col1:
-        excel_file = "extracted_targets.xlsx"
+        excel_file = "qualified_targets.xlsx"
         st.session_state['df_results'].to_excel(excel_file, index=False)
         with open(excel_file, "rb") as f:
             st.download_button(
                 label="📥 تنزيل كملف Excel",
                 data=f,
-                file_name="extracted_targets.xlsx",
+                file_name="qualified_targets.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             
@@ -222,7 +245,7 @@ if 'df_results' in st.session_state and not st.session_state['df_results'].empty
         st.download_button(
             label="📥 تنزيل كملف CSV",
             data=csv_data,
-            file_name="extracted_targets.csv",
+            file_name="qualified_targets.csv",
             mime="text/csv"
         )
 
@@ -230,4 +253,4 @@ st.markdown("""
     <div class="footer-container">
         <p class="developer-tag">Developed by Engineer Hamada Ayoub</p>
     </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=Target Container if needed)
