@@ -253,4 +253,4 @@ st.markdown("""
     <div class="footer-container">
         <p class="developer-tag">Developed by Engineer Hamada Ayoub</p>
     </div>
-""", unsafe_allow_html=Target Container if needed)
+""", unsafe_allow_html=True)
