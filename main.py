@@ -3,6 +3,11 @@ import pandas as pd
 import re
 import time
 import base64
+import os
+
+# تثبيت متصفح بلاي رايت تلقائياً على السحابة لو مش موجود
+os.system("playwright install chromium")
+
 from playwright.sync_api import sync_playwright
 
 st.set_page_config(
@@ -131,7 +136,8 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
         with st.spinner("⏳ جاري الحقن وسحب التعليقات واستخراج الحسابات..."):
             try:
                 with sync_playwright() as p:
-                    browser = p.chromium.launch(headless=False)
+                    # تم التعديل هنا ليعمل في السحابة بدون شاشة (headless=True)
+                    browser = p.chromium.launch(headless=True)
                     context = browser.new_context()
                     page = context.new_page()
                     page.goto(post_url)
