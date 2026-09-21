@@ -118,7 +118,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='cyber-title'>💀 CYBER INTELLIGENCE & SOCIAL EXTRACTOR 💀</div>", unsafe_allow_html=True)
-st.markdown("<p class='description'>[ Strict Target Lead Miner - V4.2 ]</p>", unsafe_allow_html=True)
+st.markdown("<p class='description'>[ Pure Profile Miner - V4.3 ]</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -126,11 +126,11 @@ post_url = st.text_input("🔗 أدخل رابط البوست المستهدف:"
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-if st.button("🚀 بدء استخراج الأهداف الحقيقية بدقة صارمة"):
+if st.button("🚀 بدء استخراج الأهداف الحقيقية بدقة تامة"):
     if not post_url:
         st.warning("⚠️ أدخل الرابط يا غالي أولاً!")
     else:
-        with st.spinner("⏳ جارٍ فحص التعليقات وتصفية روابط الدعم والسياسات..."):
+        with st.spinner("⏳ جارٍ تنظيف النتائج وعزل روابط النظام تماماً..."):
             try:
                 extracted_data = []
                 with sync_playwright() as p:
@@ -143,23 +143,22 @@ if st.button("🚀 بدء استخراج الأهداف الحقيقية بدق�
                     
                     time.sleep(8)
                     
-                    # النزول لتحميل التعليقات
+                    # التمرير لتحميل التعليقات
                     for i in range(5):
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
                     
-                    # استهداف روابط المعلقين داخل منطقة الفيد أو التعليقات حصرياً
-                    profile_elements = page.locator('div[role="article"] a, div[data-ad-comet-preview="message"] ~ div a, ul li a').all()
-                    if not profile_elements:
-                        profile_elements = page.locator('a').all()
+                    # جلب جميع الروابط في الصفحة للفلترة الدقيقة
+                    profile_elements = page.locator('a[href*="facebook.com/"]').all()
 
                     targets = []
                     seen_urls = set()
 
-                    # قائمة كلمات مرفوضة تماماً لمنع ظهور صفحات الدعم والسياسات
-                    forbidden_keywords = [
-                        "help", "careers", "developers", "privacy", "terms", "ad choices", 
-                        "cookies", "create", "login", "signup", "recover", "meta", "messenger"
+                    # قائمة كلمات النظام المرفوضة تماماً في الروابط أو الأسماء
+                    system_keywords = [
+                        "reg", "lite", "about", "help", "privacy", "terms", "ads", "cookies", 
+                        "login", "recover", "developers", "careers", "messenger", "watch", 
+                        "photos", "posts", "story", "marketplace", "groups", "gaming", "l.php", "threads", "instagram"
                     ]
 
                     for el in profile_elements:
@@ -168,17 +167,27 @@ if st.button("🚀 بدء استخراج الأهداف الحقيقية بدق�
                             name = el.inner_text().strip()
                             
                             if href and name and len(name) > 2:
-                                name_lower = name.lower()
                                 href_lower = href.lower()
+                                name_lower = name.lower()
                                 
-                                # فحص هل الرابط أو الاسم يحتوي على كلمات ممنوعة من صفحات النظام
-                                is_forbidden = any(word in href_lower or word in name_lower for word in forbidden_keywords)
+                                # استبعاد أي رابط يحتوي على أي كلمة من كلمات نظام فيسبوك
+                                is_system = any(sys_word in href_lower for sys_word in system_keywords)
+                                is_bad_name = any(sys_word in name_lower for sys_word in system_keywords)
                                 
-                                # التأكد أن الرابط يتبع شكل البروفايلات الشخصية (يحتوي على profile.php أو اسم مستخدم وليس منشور أو مساعدة)
-                                is_valid_profile = ("facebook.com/" in href_lower or "instagram.com/" in href_lower) and not is_forbidden
-                                is_system_path = ("/posts/" in href_lower or "/photos/" in href_lower or "/watch/" in href_lower or "/story.php" in href_lower or "/help/" in href_lower)
+                                # التأكد أن الرابط يتبع شكل البروفايلات الشخصية البحتة (مثل facebook.com/username أو profile.php?id=...)
+                                # وأن الرابط لا ينتهي بـ / أو يحتوي على مسارات فرعية إضافية تدل على صفحات عامة
+                                clean_path = href_lower.split("?")[0].rstrip("/")
+                                path_parts = clean_path.split("/")
+                                
+                                # البروفايل الشخصي غالباً يكون مكون من جزءين أو ثلاثة بعد الدومين (مثل facebook.com/username)
+                                is_person_profile = False
+                                if "facebook.com/" in href_lower and not is_system and not is_bad_name:
+                                    if len(path_parts) >= 4 and path_parts[3] != "" and path_parts[3] not in ["p", "share", "groups", "pages"]:
+                                        is_person_profile = True
+                                    elif "profile.php" in href_lower:
+                                        is_person_profile = True
 
-                                if is_valid_profile and not is_system_path:
+                                if is_person_profile:
                                     if href not in seen_urls:
                                         seen_urls.add(href)
                                         targets.append({"name": name, "url": href})
@@ -187,7 +196,7 @@ if st.button("🚀 بدء استخراج الأهداف الحقيقية بدق�
                         except:
                             continue
 
-                    # فحص البروفايلات المستهدفة بدقة
+                    # فحص البروفايلات الشخصية المستخرجة فقط
                     for target in targets:
                         profile_name = target["name"]
                         profile_url = target["url"]
@@ -224,14 +233,14 @@ if st.button("🚀 بدء استخراج الأهداف الحقيقية بدق�
                     df = pd.DataFrame(extracted_data)
                 else:
                     df = pd.DataFrame({
-                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف (تأكد أن البوست عام وبدون جدار حماية قسري)"],
+                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف (تأكد أن البوست يحتوي على تعليقات أفراد ظاهرة)"],
                         "رقم الهاتف (إن وجد)": ["---"],
                         "رابط الحساب الشخصي": ["---"],
                         "الحالة": ["فشل الاستخراج"]
                     })
                 
                 st.session_state['df_results'] = df
-                st.success("🔥 تم تصفية النتائج واستخراج الأهداف الحقيقية بنجاح!")
+                st.success("🔥 تم فلترة النظام وعزل البروفايلات الشخصية الحقيقية بنجاح!")
                 
             except Exception as e:
                 st.error(f"❌ حدث خطأ أثناء الفحص: {e}")
