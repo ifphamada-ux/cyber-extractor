@@ -5,7 +5,7 @@ import time
 import base64
 import os
 
-# تثبيت متصفح بلاي رايت تلقائياً على السحابة لو مش موجود
+# تثبيت متصفح بلاي رايت تلقائياً على السحابة
 os.system("playwright install chromium")
 
 from playwright.sync_api import sync_playwright
@@ -16,7 +16,6 @@ st.set_page_config(
     layout="centered"
 )
 
-# دالة لتحويل الصورة المحلية لـ Base64 عشان تظهر في الخلفية بدون مشاكل
 def get_base64_image(image_path):
     try:
         with open(image_path, "rb") as img_file:
@@ -27,7 +26,6 @@ def get_base64_image(image_path):
 
 bg_image_code = get_base64_image("HK.webp")
 
-# التصميم النهائي والألوان (أخضر وأحمر فقط + خلفية الهكر المتوهجة)
 st.markdown(f"""
     <style>
     .stApp {{
@@ -119,9 +117,8 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# العنوان
 st.markdown("<div class='cyber-title'>💀 CYBER INTELLIGENCE & SOCIAL EXTRACTOR 💀</div>", unsafe_allow_html=True)
-st.markdown("<p class='description'>[ Secure Target Data Mining Interface - V2.0 ]</p>", unsafe_allow_html=True)
+st.markdown("<p class='description'>[ Secure Target Data Mining Interface - V2.1 ]</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -133,60 +130,98 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
     if not post_url:
         st.warning("⚠️ أدخل الرابط يا غالي أولاً!")
     else:
-        with st.spinner("⏳ جاري الحقن وسحب التعليقات واستخراج الحسابات..."):
+        with st.spinner("⏳ جاري الحقن وسحب التعليقات وتحليل أسماء الأهداف..."):
             try:
+                extracted_data = []
                 with sync_playwright() as p:
-                    # تم التعديل هنا ليعمل في السحابة بدون شاشة (headless=True)
                     browser = p.chromium.launch(headless=True)
-                    context = browser.new_context()
+                    context = browser.new_context(
+                        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    )
                     page = context.new_page()
-                    page.goto(post_url)
+                    page.goto(post_url, timeout=60000)
                     
-                    time.sleep(10)
-                    for i in range(5):
+                    time.sleep(8)
+                    
+                    # نزول متكرر لتحميل أكبر عدد ممكن من التعليقات
+                    for i in range(6):
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
-                        
-                    content = page.content()
+                    
+                    # استهداف عناصر التعليقات والبوستات بشكل ذكي لتجنب الأكواد والملفات الوهمية
+                    # فيسبوك غالباً يضع التعليقات داخل عناصر محددة
+                    comments = page.locator('div[dir="auto"], span[dir="auto"]').all_inner_texts()
+                    
+                    # فلترة النصوص لاستخراج أرقام الهواتف الحقيقية (تحديد نطاق الأرقام المصرية أو الدولية بدقة)
+                    # رقم هاتف حقيقي يبدأ بـ 010, 011, 012, 015 أو كود دولي مثل +20 أو +966 ويتكون من 10 لـ 14 رقم
+                    phone_regex = r'(?:\+?[0-9]{1,3}\s?)?(?:01[0125][0-9]{8}|[0-9]{10,12})'
+                    
+                    seen_phones = set()
+                    seen_texts = set()
+
+                    for text in comments:
+                        if text and len(text.strip()) > 2:
+                            # البحث عن أرقام هواتف حقيقية داخل نص التعليق
+                            found_phones = re.findall(phone_regex, text)
+                            
+                            # استبعاد الأرقام الطويلة العشوائية التي تنتمي لـ IDs برمجية (أكبر من 13 رقم أو متكررة بشكل مريب)
+                            valid_phones = [p for p in found_phones if 10 <= len(re.sub(r'\D', '', p)) <= 13]
+                            
+                            if valid_phones:
+                                for phone in valid_phones:
+                                    clean_phone = re.sub(r'\D', '', phone)
+                                    if clean_phone not in seen_phones:
+                                        seen_phones.add(clean_phone)
+                                        extracted_data.append({
+                                            "اسم / صاحب التعليق أو النص": text[:100] + "..." if len(text) > 100 else text,
+                                            "رقم الهاتف المستخرج": clean_phone,
+                                            "الرابط / الحساب المستخرج": "متاح عبر التعليق الأصلي"
+                                        })
+                            elif len(text.strip()) > 15 and text not in seen_texts:
+                                # حفظ النصوص والتعليقات الحقيقية التي لا تحتوي على أرقام ولكنها تعليقات مفيدة
+                                seen_texts.add(text)
+                                # تحقق إذا كان النص يبدو كاسم أو تعليق بشري حقيقي
+                                if not any(char.isdigit() for char in text[:5]):
+                                    extracted_data.append({
+                                        "اسم / صاحب التعليق أو النص": text[:120],
+                                        "رقم الهاتف المستخرج": "غير متوفر في النص",
+                                        "الرابط / الحساب المستخرج": "نص تفاعلي / تعليق"
+                                    })
+
                     browser.close()
                 
-                phone_pattern = r'(\+?\d{10,15}|01[0125]\d{8})'
-                url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
-                
-                phones = list(set(re.findall(phone_pattern, content)))
-                urls = list(set(re.findall(url_pattern, content)))
-                
-                max_len = max(len(phones), len(urls), 1)
-                phones += [""] * (max_len - len(phones))
-                urls += [""] * (max_len - len(urls))
-                
-                df = pd.DataFrame({
-                    "رقم الهاتف المستخرج": phones,
-                    "الرابط / الحساب المستخرج": urls
-                })
+                if extracted_data:
+                    df = pd.DataFrame(extracted_data)
+                else:
+                    # جدول افتراضي تنبيهي لو ملقاش بيانات كافيه بسبب حماية المنصة
+                    df = pd.DataFrame({
+                        "اسم / صاحب التعليق أو النص": ["تنبيه: المنصة تفرض حماية قوية تتطلب تسجيل دخول (Login Wall)"],
+                        "رقم الهاتف المستخرج": ["---"],
+                        "الرابط / الحساب المستخرج": ["---"]
+                    })
                 
                 st.session_state['df_results'] = df
-                st.success("🔥 تم سحب البيانات بنجاح تام!")
+                st.success("🔥 تمت عملية الفحص والتحليل بنجاح تام!")
                 
             except Exception as e:
-                st.error(f"❌ حدث خطأ: {e}")
+                st.error(f"❌ حدث خطأ أثناء السحب: {e}")
 
 if 'df_results' in st.session_state and not st.session_state['df_results'].empty:
     st.markdown("---")
-    st.subheader("📋 صيد الضحايا (البيانات المستخرجة):")
+    st.subheader("📋 صيد الضحايا (البيانات والتعليقات المُصفّاة):")
     st.dataframe(st.session_state['df_results'], use_container_width=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     
     with col1:
-        excel_file = "comments_data.xlsx"
+        excel_file = "extracted_targets.xlsx"
         st.session_state['df_results'].to_excel(excel_file, index=False)
         with open(excel_file, "rb") as f:
             st.download_button(
                 label="📥 تنزيل كملف Excel",
                 data=f,
-                file_name="comments_data.xlsx",
+                file_name="extracted_targets.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             
@@ -195,11 +230,10 @@ if 'df_results' in st.session_state and not st.session_state['df_results'].empty
         st.download_button(
             label="📥 تنزيل كملف CSV",
             data=csv_data,
-            file_name="comments_data.csv",
-            mime="text/csv"
+            file_name="extracted_targets.csv",
+2026-07-21        mime="text/csv"
         )
 
-# التوقيع أسفل الصفحة
 st.markdown("""
     <div class="footer-container">
         <p class="developer-tag">Developed by Engineer Hamada Ayoub</p>
