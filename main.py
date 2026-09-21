@@ -118,7 +118,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='cyber-title'>💀 CYBER INTELLIGENCE & SOCIAL EXTRACTOR 💀</div>", unsafe_allow_html=True)
-st.markdown("<p class='description'>[ Smart Commenters & Leads Miner - V4.1 ]</p>", unsafe_allow_html=True)
+st.markdown("<p class='description'>[ Strict Target Lead Miner - V4.2 ]</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -126,11 +126,11 @@ post_url = st.text_input("🔗 أدخل رابط البوست المستهدف:"
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-if st.button("🚀 بدء فحص المهتمين الحقيقيين واستخراج البيانات"):
+if st.button("🚀 بدء استخراج الأهداف الحقيقية بدقة صارمة"):
     if not post_url:
         st.warning("⚠️ أدخل الرابط يا غالي أولاً!")
     else:
-        with st.spinner("⏳ جارٍ سحب التعليقات واستبعاد قوائم النظام العامة..."):
+        with st.spinner("⏳ جارٍ فحص التعليقات وتصفية روابط الدعم والسياسات..."):
             try:
                 extracted_data = []
                 with sync_playwright() as p:
@@ -143,52 +143,51 @@ if st.button("🚀 بدء فحص المهتمين الحقيقيين واستخ�
                     
                     time.sleep(8)
                     
-                    # التمرير لأسفل لتحميل تعليقات المستخدمين
+                    # النزول لتحميل التعليقات
                     for i in range(5):
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
                     
-                    # قائمة الكلمات المستبعدة (روابط وسكربتات النظام التي تظهر في القوائم والفوتر)
-                    blacklisted_names = [
-                        "forgot password", "sign up", "log in", "messenger", 
-                        "facebook lite", "meta pay", "meta store", "meta quest", 
-                        "ray-ban meta", "meta ai", "instagram", "privacy", "terms", 
-                        "advertising", "cookies", "more", "about", "help", "create"
-                    ]
-
-                    # استهداف الروابط داخل منطقة التعليقات تحديداً لتجنب الفوتر
-                    profile_elements = page.locator('div[role="article"] a[href*="facebook.com/"], div[role="feed"] a[href*="facebook.com/"]').all()
-                    
-                    # لو لم يجد عناصر داخل الارتيكل، نبحث في الروابط العامة مع فلترة صارمة جداً
+                    # استهداف روابط المعلقين داخل منطقة الفيد أو التعليقات حصرياً
+                    profile_elements = page.locator('div[role="article"] a, div[data-ad-comet-preview="message"] ~ div a, ul li a').all()
                     if not profile_elements:
-                        profile_elements = page.locator('a[href*="facebook.com/"]').all()
+                        profile_elements = page.locator('a').all()
 
                     targets = []
                     seen_urls = set()
+
+                    # قائمة كلمات مرفوضة تماماً لمنع ظهور صفحات الدعم والسياسات
+                    forbidden_keywords = [
+                        "help", "careers", "developers", "privacy", "terms", "ad choices", 
+                        "cookies", "create", "login", "signup", "recover", "meta", "messenger"
+                    ]
 
                     for el in profile_elements:
                         try:
                             href = el.get_attribute("href")
                             name = el.inner_text().strip()
                             
-                            if href and name:
+                            if href and name and len(name) > 2:
                                 name_lower = name.lower()
-                                # استبعاد أسماء النظام والروابط الطويلة أو روابط المنشورات والصور
-                                is_blacklisted = any(bad in name_lower for bad in blacklisted_names)
-                                is_system_link = ("/posts/" in href or "/photos/" in href or "/watch/" in href or 
-                                                  "/story.php" in href or "/reg/" in href or "/login/" in href or 
-                                                  "/recover/" in href or "l.php" in href)
-                                                  
-                                if not is_blacklisted and not is_system_link and len(name) > 2:
+                                href_lower = href.lower()
+                                
+                                # فحص هل الرابط أو الاسم يحتوي على كلمات ممنوعة من صفحات النظام
+                                is_forbidden = any(word in href_lower or word in name_lower for word in forbidden_keywords)
+                                
+                                # التأكد أن الرابط يتبع شكل البروفايلات الشخصية (يحتوي على profile.php أو اسم مستخدم وليس منشور أو مساعدة)
+                                is_valid_profile = ("facebook.com/" in href_lower or "instagram.com/" in href_lower) and not is_forbidden
+                                is_system_path = ("/posts/" in href_lower or "/photos/" in href_lower or "/watch/" in href_lower or "/story.php" in href_lower or "/help/" in href_lower)
+
+                                if is_valid_profile and not is_system_path:
                                     if href not in seen_urls:
                                         seen_urls.add(href)
                                         targets.append({"name": name, "url": href})
-                                        if len(targets) >= 10:  # فحص أول 10 أهداف حقيقية
+                                        if len(targets) >= 10:
                                             break
                         except:
                             continue
 
-                    # فحص بروفايلات الأهداف المستخرجة
+                    # فحص البروفايلات المستهدفة بدقة
                     for target in targets:
                         profile_name = target["name"]
                         profile_url = target["url"]
@@ -225,17 +224,17 @@ if st.button("🚀 بدء فحص المهتمين الحقيقيين واستخ�
                     df = pd.DataFrame(extracted_data)
                 else:
                     df = pd.DataFrame({
-                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف واضحة (المنصة تتطلب تسجيل دخول أو حظر الوصول)"],
+                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف (تأكد أن البوست عام وبدون جدار حماية قسري)"],
                         "رقم الهاتف (إن وجد)": ["---"],
                         "رابط الحساب الشخصي": ["---"],
                         "الحالة": ["فشل الاستخراج"]
                     })
                 
                 st.session_state['df_results'] = df
-                st.success("🔥 تم تجميع المعلقين الحقيقيين وفحص بروفايلاتهم بنجاح!")
+                st.success("🔥 تم تصفية النتائج واستخراج الأهداف الحقيقية بنجاح!")
                 
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء فحص الأهداف: {e}")
+                st.error(f"❌ حدث خطأ أثناء الفحص: {e}")
 
 if 'df_results' in st.session_state and not st.session_state['df_results'].empty:
     st.markdown("---")
