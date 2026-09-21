@@ -118,7 +118,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.markdown("<div class='cyber-title'>💀 CYBER INTELLIGENCE & SOCIAL EXTRACTOR 💀</div>", unsafe_allow_html=True)
-st.markdown("<p class='description'>[ Deep Target Mining & Lead Qualification - V4.0 ]</p>", unsafe_allow_html=True)
+st.markdown("<p class='description'>[ Smart Commenters & Leads Miner - V4.1 ]</p>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -126,11 +126,11 @@ post_url = st.text_input("🔗 أدخل رابط البوست المستهدف:"
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-if st.button("🚀 بدء فحص المهتمين واستخراج البيانات العميقة"):
+if st.button("🚀 بدء فحص المهتمين الحقيقيين واستخراج البيانات"):
     if not post_url:
         st.warning("⚠️ أدخل الرابط يا غالي أولاً!")
     else:
-        with st.spinner("⏳ جارٍ استهداف المهتمين بالبوست وفحص بروفايلاتهم شخصياً..."):
+        with st.spinner("⏳ جارٍ سحب التعليقات واستبعاد قوائم النظام العامة..."):
             try:
                 extracted_data = []
                 with sync_playwright() as p:
@@ -143,14 +143,26 @@ if st.button("🚀 بدء فحص المهتمين واستخراج البيان�
                     
                     time.sleep(8)
                     
-                    # التمرير لتحميل التعليقات التفاعلية
-                    for i in range(4):
+                    # التمرير لأسفل لتحميل تعليقات المستخدمين
+                    for i in range(5):
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
                     
-                    # استخراج عناصر الروابط وأسماء المعلقين المهتمين من البوست
-                    profile_elements = page.locator('a[href*="facebook.com/"], a[href*="instagram.com/"]').all()
+                    # قائمة الكلمات المستبعدة (روابط وسكربتات النظام التي تظهر في القوائم والفوتر)
+                    blacklisted_names = [
+                        "forgot password", "sign up", "log in", "messenger", 
+                        "facebook lite", "meta pay", "meta store", "meta quest", 
+                        "ray-ban meta", "meta ai", "instagram", "privacy", "terms", 
+                        "advertising", "cookies", "more", "about", "help", "create"
+                    ]
+
+                    # استهداف الروابط داخل منطقة التعليقات تحديداً لتجنب الفوتر
+                    profile_elements = page.locator('div[role="article"] a[href*="facebook.com/"], div[role="feed"] a[href*="facebook.com/"]').all()
                     
+                    # لو لم يجد عناصر داخل الارتيكل، نبحث في الروابط العامة مع فلترة صارمة جداً
+                    if not profile_elements:
+                        profile_elements = page.locator('a[href*="facebook.com/"]').all()
+
                     targets = []
                     seen_urls = set()
 
@@ -159,32 +171,36 @@ if st.button("🚀 بدء فحص المهتمين واستخراج البيان�
                             href = el.get_attribute("href")
                             name = el.inner_text().strip()
                             
-                            # فلترة الروابط لاستبعاد اللينكات العامة والتركيز على بروفايلات الأشخاص
-                            if href and name and len(name) > 2:
-                                if "/posts/" not in href and "/photos/" not in href and "/watch/" not in href and "/story.php" not in href:
+                            if href and name:
+                                name_lower = name.lower()
+                                # استبعاد أسماء النظام والروابط الطويلة أو روابط المنشورات والصور
+                                is_blacklisted = any(bad in name_lower for bad in blacklisted_names)
+                                is_system_link = ("/posts/" in href or "/photos/" in href or "/watch/" in href or 
+                                                  "/story.php" in href or "/reg/" in href or "/login/" in href or 
+                                                  "/recover/" in href or "l.php" in href)
+                                                  
+                                if not is_blacklisted and not is_system_link and len(name) > 2:
                                     if href not in seen_urls:
                                         seen_urls.add(href)
                                         targets.append({"name": name, "url": href})
-                                        if len(targets) >= 10:  # حد أقصى لاستهداف أول 10 أهداف لضمان السرعة وتجنب الحظر
+                                        if len(targets) >= 10:  # فحص أول 10 أهداف حقيقية
                                             break
                         except:
                             continue
 
-                    # فحص كل بروفايل على حدة لاستخراج البيانات المتاحة (رقم الهاتف / الاهتمام)
+                    # فحص بروفايلات الأهداف المستخرجة
                     for target in targets:
                         profile_name = target["name"]
                         profile_url = target["url"]
                         phone_found = "غير متوفر (حساب خاص)"
                         
                         try:
-                            # فتح صفحة البروفايل الشخصي للهدف
                             profile_page = context.new_page()
                             profile_page.goto(profile_url, timeout=30000)
                             time.sleep(4)
                             
                             profile_text = profile_page.inner_text("body")
                             
-                            # البحث عن رقم هاتف داخل بروفايل الشخص
                             phone_regex = r'(?:\+?[0-9]{1,3}\s?)?(?:01[0125][0-9]{8}|[0-9]{10,12})'
                             found_phones = re.findall(phone_regex, profile_text)
                             valid_phones = [p for p in found_phones if 10 <= len(re.sub(r'\D', '', p)) <= 13]
@@ -200,7 +216,7 @@ if st.button("🚀 بدء فحص المهتمين واستخراج البيان�
                             "اسم الشخص المهتم": profile_name,
                             "رقم الهاتف (إن وجد)": phone_found,
                             "رابط الحساب الشخصي": profile_url,
-                            "الحالة": "مهتم بالبوست ومفحوص"
+                            "الحالة": "تم الفحص بنجاح"
                         })
 
                     browser.close()
@@ -209,14 +225,14 @@ if st.button("🚀 بدء فحص المهتمين واستخراج البيان�
                     df = pd.DataFrame(extracted_data)
                 else:
                     df = pd.DataFrame({
-                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف (يتطلب فتح الصلاحيات أو تسجيل دخول)"],
+                        "اسم الشخص المهتم": ["لم يتم العثور على أهداف واضحة (المنصة تتطلب تسجيل دخول أو حظر الوصول)"],
                         "رقم الهاتف (إن وجد)": ["---"],
                         "رابط الحساب الشخصي": ["---"],
                         "الحالة": ["فشل الاستخراج"]
                     })
                 
                 st.session_state['df_results'] = df
-                st.success("🔥 تم تجميع الأهداف المهتمة وفحص بروفايلاتهم بنجاح تام!")
+                st.success("🔥 تم تجميع المعلقين الحقيقيين وفحص بروفايلاتهم بنجاح!")
                 
             except Exception as e:
                 st.error(f"❌ حدث خطأ أثناء فحص الأهداف: {e}")
