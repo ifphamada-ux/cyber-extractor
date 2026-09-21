@@ -148,12 +148,10 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
                         time.sleep(3)
                     
-                    # استهداف عناصر التعليقات والبوستات بشكل ذكي لتجنب الأكواد والملفات الوهمية
-                    # فيسبوك غالباً يضع التعليقات داخل عناصر محددة
+                    # استهداف عناصر التعليقات والبوستات بشكل ذكي
                     comments = page.locator('div[dir="auto"], span[dir="auto"]').all_inner_texts()
                     
-                    # فلترة النصوص لاستخراج أرقام الهواتف الحقيقية (تحديد نطاق الأرقام المصرية أو الدولية بدقة)
-                    # رقم هاتف حقيقي يبدأ بـ 010, 011, 012, 015 أو كود دولي مثل +20 أو +966 ويتكون من 10 لـ 14 رقم
+                    # فلترة النصوص لاستخراج أرقام الهواتف الحقيقية
                     phone_regex = r'(?:\+?[0-9]{1,3}\s?)?(?:01[0125][0-9]{8}|[0-9]{10,12})'
                     
                     seen_phones = set()
@@ -161,10 +159,7 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
 
                     for text in comments:
                         if text and len(text.strip()) > 2:
-                            # البحث عن أرقام هواتف حقيقية داخل نص التعليق
                             found_phones = re.findall(phone_regex, text)
-                            
-                            # استبعاد الأرقام الطويلة العشوائية التي تنتمي لـ IDs برمجية (أكبر من 13 رقم أو متكررة بشكل مريب)
                             valid_phones = [p for p in found_phones if 10 <= len(re.sub(r'\D', '', p)) <= 13]
                             
                             if valid_phones:
@@ -178,9 +173,7 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
                                             "الرابط / الحساب المستخرج": "متاح عبر التعليق الأصلي"
                                         })
                             elif len(text.strip()) > 15 and text not in seen_texts:
-                                # حفظ النصوص والتعليقات الحقيقية التي لا تحتوي على أرقام ولكنها تعليقات مفيدة
                                 seen_texts.add(text)
-                                # تحقق إذا كان النص يبدو كاسم أو تعليق بشري حقيقي
                                 if not any(char.isdigit() for char in text[:5]):
                                     extracted_data.append({
                                         "اسم / صاحب التعليق أو النص": text[:120],
@@ -193,7 +186,6 @@ if st.button("🚀 بدء الاختراق السحابي وسحب البيان�
                 if extracted_data:
                     df = pd.DataFrame(extracted_data)
                 else:
-                    # جدول افتراضي تنبيهي لو ملقاش بيانات كافيه بسبب حماية المنصة
                     df = pd.DataFrame({
                         "اسم / صاحب التعليق أو النص": ["تنبيه: المنصة تفرض حماية قوية تتطلب تسجيل دخول (Login Wall)"],
                         "رقم الهاتف المستخرج": ["---"],
@@ -231,7 +223,7 @@ if 'df_results' in st.session_state and not st.session_state['df_results'].empty
             label="📥 تنزيل كملف CSV",
             data=csv_data,
             file_name="extracted_targets.csv",
-2026-07-21        mime="text/csv"
+            mime="text/csv"
         )
 
 st.markdown("""
